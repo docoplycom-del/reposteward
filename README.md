@@ -11,7 +11,7 @@ The product organisation is intentionally explicit:
 - a QA specialist defines verification for bugs and regressions;
 - a reviewer either releases the job to implementation or escalates it to a human.
 
-The first executable slice focuses on the orchestration contract, memory handoffs and durable run receipt. Repository checkout, patch application and pull-request publication are the next slice.
+The first executable slice focuses on the orchestration contract, memory handoffs and durable run receipt. The second slice adds constrained patch execution in a trusted disposable Git repository. Pull-request publication is intentionally not present yet.
 
 ## Run the first slice
 
@@ -27,3 +27,25 @@ Run the tests with:
 PYTHONPATH=src python -m unittest discover -s tests -v
 ```
 
+## Run the safe-execution demo
+
+First create the disposable Git fixture:
+
+```bash
+python scripts/prepare_demo_repository.py build/demo-target
+```
+
+Then let RepoSteward clone it, apply the reviewed patch, run the allowlisted test profile and emit an execution receipt:
+
+```bash
+PYTHONPATH=src python -m reposteward execute examples/issues/greeting.json \
+  --repository build/demo-target \
+  --patch examples/patches/fix-greeting.patch \
+  --allow-local-repository \
+  --allow-trusted-test-execution \
+  --output build/demo-execution.json
+```
+
+A successful run ends at `AWAITING_HUMAN_APPROVAL`. RepoSteward removes the cloned repository's `origin`, does not commit, has no push capability and does not open a pull request.
+
+The current test boundary is process-level only. Patched test code is not OS- or network-sandboxed, so this slice must be used only with controlled disposable repositories. See [`docs/SAFETY_BOUNDARY.md`](docs/SAFETY_BOUNDARY.md).

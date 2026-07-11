@@ -1,0 +1,9 @@
+{
+  "repository": "local/reposteward-demo",
+  "number": 7,
+  "title": "Greeting omits punctuation",
+  "body": "The greeting should be easier to read.\n\nAcceptance criteria:\n- Return `Hello, Ada!` for the name `Ada`\n- Keep the public function signature unchanged",
+  "labels": ["bug"],
+  "files": ["greeting.py"]
+}
+
