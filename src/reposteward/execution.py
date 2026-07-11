@@ -122,6 +122,12 @@ def _require_success(result: subprocess.CompletedProcess[str], action: str) -> s
     return result.stdout
 
 
+def _write_utf8_lf(path: Path, content: str) -> None:
+    """Write protocol text without platform newline translation."""
+    with path.open("w", encoding="utf-8", newline="\n") as handle:
+        handle.write(content)
+
+
 def _validate_repo_path(path: str) -> str:
     if not path or "\x00" in path or "\\" in path or any(ord(character) < 32 for character in path):
         raise ExecutionSafetyError("Repository paths must be non-empty POSIX paths without control characters.")
@@ -257,7 +263,7 @@ class WorkspaceExecutor:
         )
 
         patch_path = execution_dir / "candidate.patch"
-        patch_path.write_text(patch_text, encoding="utf-8")
+        _write_utf8_lf(patch_path, patch_text)
         apply_base = [self.git, "apply", "--whitespace=error-all", "--index"]
         _require_success(
             _run([*apply_base, "--check", str(patch_path)], cwd=repository_dir, environment=environment),

@@ -7,7 +7,14 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from reposteward.execution import ExecutionPolicy, ExecutionSafetyError, WorkspaceExecutor, validate_patch, validate_repository_source
+from reposteward.execution import (
+    ExecutionPolicy,
+    ExecutionSafetyError,
+    WorkspaceExecutor,
+    _write_utf8_lf,
+    validate_patch,
+    validate_repository_source,
+)
 from reposteward.models import Issue
 
 
@@ -157,6 +164,12 @@ class ExecutionTests(unittest.TestCase):
         rendered = json.dumps(receipt)
         self.assertNotIn("GITHUB_TOKEN", rendered)
         self.assertNotIn("SSH_AUTH_SOCK", rendered)
+
+    def test_candidate_patch_writer_preserves_lf_protocol_bytes(self) -> None:
+        path = self.root / "candidate.patch"
+        _write_utf8_lf(path, VALID_PATCH)
+        self.assertEqual(path.read_bytes(), VALID_PATCH.encode("utf-8"))
+        self.assertNotIn(b"\r\n", path.read_bytes())
 
 
 if __name__ == "__main__":
