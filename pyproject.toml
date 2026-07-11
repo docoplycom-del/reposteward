@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "reposteward"
+version = "0.1.0"
+description = "Traceable multi-agent orchestration for open-source maintenance"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.scripts]
+reposteward = "reposteward.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
