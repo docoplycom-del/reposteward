@@ -1,0 +1,9 @@
+{
+  "repository": "example/acme-api",
+  "number": 42,
+  "title": "API client timeout is ignored during retries",
+  "body": "The configured timeout is lost after the first retry.\n\nAcceptance criteria:\n- Preserve the configured timeout across every retry\n- Add a regression test covering the second attempt",
+  "labels": ["bug", "client"],
+  "files": ["src/client.py", "tests/test_client.py"]
+}
+
