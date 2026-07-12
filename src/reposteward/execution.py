@@ -625,6 +625,16 @@ class WorkspaceExecutor:
             _run([self.git, "rev-parse", "HEAD"], cwd=repository_dir, environment=environment),
             "Base commit inspection",
         ).strip()
+        base_branch = _require_success(
+            _run(
+                [self.git, "symbolic-ref", "--quiet", "--short", "HEAD"],
+                cwd=repository_dir,
+                environment=environment,
+            ),
+            "Base branch inspection",
+        ).strip()
+        if not base_branch or any(ord(character) < 32 for character in base_branch):
+            raise ExecutionSafetyError("Repository must be checked out on a named base branch.")
         inventory = self._inventory(repository_dir, environment)
         if not set(declared_paths).issubset(inventory):
             missing = sorted(set(declared_paths) - set(inventory))
@@ -714,6 +724,7 @@ class WorkspaceExecutor:
             "workspace": {
                 "path": str(repository_dir),
                 "baseCommit": base_commit,
+                "baseBranch": base_branch,
                 "remoteRemoved": True,
                 "trackedFileCount": len(inventory),
                 "trackedFiles": inventory,
