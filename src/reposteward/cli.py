@@ -5,7 +5,15 @@ import json
 import sys
 from pathlib import Path
 
-from .execution import ExecutionPolicy, ExecutionSafetyError, TEST_PROFILES, WorkspaceExecutor
+from .execution import (
+    ALLOWED_DOCKER_IMAGES,
+    DEFAULT_DOCKER_IMAGE,
+    TEST_ISOLATIONS,
+    ExecutionPolicy,
+    ExecutionSafetyError,
+    TEST_PROFILES,
+    WorkspaceExecutor,
+)
 from .models import Issue
 from .runner import run_job
 
@@ -24,11 +32,23 @@ def build_execute_parser(prog: str | None = None) -> argparse.ArgumentParser:
     parser.add_argument("--patch", required=True, type=Path, help="Candidate unified-diff file")
     parser.add_argument("--workspace-root", type=Path, default=Path("build/workspaces"))
     parser.add_argument("--test-profile", choices=sorted(TEST_PROFILES), default="python-unittest")
+    parser.add_argument(
+        "--test-isolation",
+        choices=TEST_ISOLATIONS,
+        default="process",
+        help="Run tests in the trusted host process or a constrained Docker Linux container",
+    )
+    parser.add_argument(
+        "--docker-image",
+        choices=ALLOWED_DOCKER_IMAGES,
+        default=DEFAULT_DOCKER_IMAGE,
+        help="Pre-pulled Docker image to resolve to an immutable local image ID",
+    )
     parser.add_argument("--allow-local-repository", action="store_true", help="Permit cloning a local disposable Git repository")
     parser.add_argument(
         "--allow-trusted-test-execution",
         action="store_true",
-        help="Run the allowlisted test profile; patched code is not OS- or network-sandboxed",
+        help="Authorize process-mode tests; patched code is not OS- or network-sandboxed",
     )
     parser.add_argument("--output", type=Path, help="Optional path for the execution receipt")
     return parser
@@ -65,12 +85,14 @@ def run_execute(argv: list[str], prog: str | None = None) -> int:
         }, args.output)
         return 2
 
-    policy = ExecutionPolicy(
-        allow_local_repository=args.allow_local_repository,
-        allow_test_execution=args.allow_trusted_test_execution,
-    )
-    executor = WorkspaceExecutor(args.workspace_root, policy)
     try:
+        policy = ExecutionPolicy(
+            allow_local_repository=args.allow_local_repository,
+            allow_test_execution=args.allow_trusted_test_execution,
+            test_isolation=args.test_isolation,
+            docker_image=args.docker_image,
+        )
+        executor = WorkspaceExecutor(args.workspace_root, policy)
         receipt = executor.execute(
             issue,
             args.repository,
