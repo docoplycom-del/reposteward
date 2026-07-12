@@ -330,6 +330,7 @@ class ExecutionTests(unittest.TestCase):
         self.assertTrue(receipt["tests"]["passed"])
         self.assertEqual(receipt["patch"]["changedFiles"], ["greeting.py"])
         self.assertEqual(receipt["patch"]["candidateSha256"], hashlib.sha256(VALID_PATCH.encode()).hexdigest())
+        self.assertEqual(receipt["workspace"]["baseBranch"], "main")
         self.assertTrue(receipt["workspace"]["remoteRemoved"])
         self.assertFalse(receipt["approval"]["pushCapabilityPresent"])
         cloned = Path(receipt["workspace"]["path"])
