@@ -74,6 +74,7 @@ class FakeDocker:
         create_times_out: bool = False,
         context_endpoint: str = "npipe:////./pipe/dockerDesktopLinuxEngine",
         mount_source_override: str | None = None,
+        log_compression: str | None = "false",
         stdout: str = "container tests passed\n",
         stderr: str = "",
     ) -> None:
@@ -87,6 +88,7 @@ class FakeDocker:
         self.create_times_out = create_times_out
         self.context_endpoint = context_endpoint
         self.mount_source_override = mount_source_override
+        self.log_compression = log_compression
         self.stdout = stdout
         self.stderr = stderr
         self.calls: list[dict[str, object]] = []
@@ -224,7 +226,15 @@ class FakeDocker:
                 "RestartPolicy": {"Name": "no"},
                 "LogConfig": {
                     "Type": "local",
-                    "Config": {"max-size": DOCKER_LOG_LIMIT, "max-file": "1"},
+                    "Config": {
+                        "max-size": DOCKER_LOG_LIMIT,
+                        "max-file": "1",
+                        **(
+                            {"compress": self.log_compression}
+                            if self.log_compression is not None
+                            else {}
+                        ),
+                    },
                 },
                 "Tmpfs": {"/tmp": f"rw,noexec,nosuid,nodev,size={DOCKER_TMPFS_SIZE},mode=1777"},
                 "Init": True,
@@ -381,6 +391,15 @@ class ExecutionTests(unittest.TestCase):
         self.assertEqual(create[create.index("--memory") + 1], DOCKER_MEMORY_LIMIT)
         self.assertEqual(create[create.index("--cpus") + 1], DOCKER_CPU_LIMIT)
         self.assertEqual(create[create.index("--pids-limit") + 1], str(DOCKER_PID_LIMIT))
+        log_options = [
+            create[index + 1]
+            for index, argument in enumerate(create)
+            if argument == "--log-opt"
+        ]
+        self.assertEqual(
+            log_options,
+            [f"max-size={DOCKER_LOG_LIMIT}", "max-file=1", "compress=false"],
+        )
         self.assertEqual(create.count("--mount"), 1)
         mount = create[create.index("--mount") + 1]
         self.assertIn("target=/workspace", mount)
@@ -467,6 +486,22 @@ class ExecutionTests(unittest.TestCase):
     def test_docker_effective_config_mismatch_blocks_and_cleans_up(self) -> None:
         fake = FakeDocker(network_mode="bridge")
         with self.assertRaisesRegex(ExecutionSafetyError, "effective configuration"):
+            self.docker_executor(fake).execute(
+                self.issue,
+                str(self.source),
+                VALID_PATCH,
+                "python-unittest",
+            )
+        operations = [
+            docker_args(call["command"])[1]
+            for call in fake.calls
+            if docker_args(call["command"])[0] == "container"
+        ]
+        self.assertIn("rm", operations)
+        self.assertNotIn("start", operations)
+
+        fake = FakeDocker(log_compression="true")
+        with self.assertRaisesRegex(ExecutionSafetyError, "disabled log compression"):
             self.docker_executor(fake).execute(
                 self.issue,
                 str(self.source),

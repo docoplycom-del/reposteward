@@ -38,7 +38,7 @@ The executor:
 - provides a 64 MB no-exec `/tmp` tmpfs as declared scratch space;
 - limits the container to one CPU, 512 MB memory and swap, 64 processes and 256 open files;
 - disables image health checks and restarts;
-- retains at most one 64 KB local Docker log file before collecting bounded output tails;
+- retains at most one uncompressed 64 KB local Docker log file before collecting bounded output tails;
 - removes the named container after create failures, kills it on test timeout and requires daemon-confirmed removal before returning a receipt; and
 - records the resolved image ID, effective-control attestation, resource limits and hashed container/workspace identifiers in the receipt.
 

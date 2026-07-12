@@ -296,6 +296,8 @@ def _build_docker_create_command(
         f"max-size={DOCKER_LOG_LIMIT}",
         "--log-opt",
         "max-file=1",
+        "--log-opt",
+        "compress=false",
         "--init",
         "--entrypoint",
         "python",
@@ -414,6 +416,7 @@ def _verify_docker_container(
     log_options = log_config.get("Config") or {}
     require(log_options.get("max-size") == DOCKER_LOG_LIMIT, "log size limit")
     require(log_options.get("max-file") == "1", "log file limit")
+    require(log_options.get("compress") == "false", "disabled log compression")
     tmpfs = host.get("Tmpfs") or {}
     tmpfs_options = tmpfs.get("/tmp", "")
     tmpfs_option_set = set(tmpfs_options.split(","))
